@@ -1192,6 +1192,17 @@ namespace settings {
         ToggleSetting{cfg.shell.panel.borders}, "outline border shell edge"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Panels, "effects", tr("settings.schema.panels.border-color.label"),
+        tr("settings.schema.panels.border-color.description"), {"shell", "panel", "border_color"},
+        colorSpecPicker(cfg.shell.panel.borderColor), "outline border color theme accent"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Panels, "effects", tr("settings.schema.panels.border-width.label"),
+        tr("settings.schema.panels.border-width.description"), {"shell", "panel", "border_width"},
+        sliderFor(cfg.shell.panel.borderWidth, noctalia::config::schema::kPanelBorderWidthRange, false),
+        "outline border width thickness"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Panels, "effects", tr("settings.schema.shared.shadow.label"),
         tr("settings.schema.panels.shadow.description"), {"shell", "panel", "shadow"},
         ToggleSetting{cfg.shell.panel.shadow}, "shadow depth"
@@ -1400,6 +1411,11 @@ namespace settings {
         SettingsSection::Panels, "polkit", "polkit", "settings.schema.panels.position-polkit.label",
         "settings.schema.panels.position-polkit.description", cfg.shell.panel.polkitPosition,
         &ShellConfig::PanelConfig::polkitPlacement
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.wallpaper-show-names.label"),
+        tr("settings.schema.panels.wallpaper-show-names.description"), {"shell", "panel", "wallpaper_show_names"},
+        ToggleSetting{cfg.shell.panel.wallpaperShowNames}, "picker grid caption file name label thumbnail"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.placement-wallpaper.label"),
@@ -1635,6 +1651,22 @@ namespace settings {
           SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.lock-before-suspend.label"),
           tr("settings.schema.lockscreen.lock-before-suspend.description"), {"lockscreen", "lock_before_suspend"},
           ToggleSetting{cfg.lockscreen.lockBeforeSuspend}, "lock screen before suspend sleep lid close prepareforsleep"
+      );
+      e.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.grace-period.label"),
+          tr("settings.schema.lockscreen.grace-period.description"), {"lockscreen", "grace_period_seconds"},
+          StepperSetting{
+              .value = std::clamp(cfg.lockscreen.gracePeriodSeconds, 0, 60),
+              .minValue = 0,
+              .maxValue = 60,
+              .step = 1,
+              .valueSuffix = "s"
+          },
+          "lock screen grace period passwordless unlock keypress mouse movement"
       );
       e.visibleWhen = lockscreenOn;
       entries.push_back(std::move(e));
@@ -2833,6 +2865,25 @@ namespace settings {
       e.visibleWhen = calendarOn;
       entries.push_back(std::move(e));
     }
+    {
+      auto e = makeEntry(
+          SettingsSection::Calendar, "general", tr("settings.schema.services.calendar-dedupe-events.label"),
+          tr("settings.schema.services.calendar-dedupe-events.description"), {"calendar", "dedupe_events"},
+          ToggleSetting{cfg.calendar.dedupeEvents}, "calendar events duplicate merge"
+      );
+      e.visibleWhen = calendarOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          SettingsSection::Calendar, "general", tr("settings.schema.services.calendar-dedupe-ignore-patterns.label"),
+          tr("settings.schema.services.calendar-dedupe-ignore-patterns.description"),
+          {"calendar", "dedupe_ignore_patterns"}, ListSetting{.items = cfg.calendar.dedupeIgnorePatterns},
+          "calendar events duplicate merge regex title"
+      );
+      e.visibleWhen = [](const Config& c) { return c.calendar.enabled && c.calendar.dedupeEvents; };
+      entries.push_back(std::move(e));
+    }
     // Week numbers are a grid decoration, so they stay available when event syncing is off.
     entries.push_back(makeEntry(
         SettingsSection::Calendar, "general", tr("settings.schema.services.calendar-week-numbers.label"),
@@ -2910,6 +2961,26 @@ namespace settings {
         SettingsSection::Services, "audio", tr("settings.schema.services.shell-sounds.label"),
         tr("settings.schema.services.shell-sounds.description"), {"audio", "enable_sounds"},
         ToggleSetting{cfg.audio.enableSounds}, "sound"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Services, "audio", tr("settings.schema.services.volume-sounds.label"),
+        tr("settings.schema.services.volume-sounds.description"), {"audio", "enable_volume_sounds"},
+        ToggleSetting{cfg.audio.enableVolumeSounds}, "sound"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Services, "audio", tr("settings.schema.services.notification-sounds.label"),
+        tr("settings.schema.services.notification-sounds.description"), {"audio", "enable_notification_sounds"},
+        ToggleSetting{cfg.audio.enableNotificationSounds}, "sound"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Services, "audio", tr("settings.schema.services.power-sounds.label"),
+        tr("settings.schema.services.power-sounds.description"), {"audio", "enable_power_sounds"},
+        ToggleSetting{cfg.audio.enablePowerSounds}, "sound"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Services, "audio", tr("settings.schema.services.screenshot-sounds.label"),
+        tr("settings.schema.services.screenshot-sounds.description"), {"audio", "enable_screenshot_sounds"},
+        ToggleSetting{cfg.audio.enableScreenshotSounds}, "sound"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Services, "audio", tr("settings.schema.services.sound-volume.label"),
@@ -3457,6 +3528,11 @@ namespace settings {
           section, "widgets", tr("settings.schema.bar.hover-highlight.label"),
           tr("settings.schema.bar.hover-highlight.description"), path("hover_highlight"),
           ToggleSetting{bar.hoverHighlight}, "hover highlight mouse pointer"
+      ));
+      entries.push_back(makeEntry(
+          section, "widgets", tr("settings.schema.bar.show-tooltip.label"),
+          tr("settings.schema.bar.show-tooltip.description"), path("show_tooltip"), ToggleSetting{bar.showTooltip},
+          "tooltip hover"
       ));
       entries.push_back(makeEntry(
           section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
